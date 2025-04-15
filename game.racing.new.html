@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>2D Car Racing Game</title>
+  <style>
+    canvas {
+      background: #444;
+      display: block;
+      margin: 0 auto;
+      border: 2px solid #000;
+    }
+    #gameBtn, #restartBtn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    #restartBtn {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="400" height="600"></canvas>
+<button id="gameBtn">Play</button>
+<button id="restartBtn">Play Again</button>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const gameBtn = document.getElementById('gameBtn');
+  const restartBtn = document.getElementById('restartBtn');
+
+  const carWidth = 40;
+  const carHeight = 70;
+  let carX, carY;
+  let roadLines = [];
+  let enemies = [];
+  let speed = 5;
+  let isPaused = true;
+  let isGameOver = false;
+
+  function initGame() {
+    carX = canvas.width / 2 - carWidth / 2;
+    carY = canvas.height - carHeight - 10;
+    roadLines = [];
+    enemies = [];
+    isPaused = true;
+    isGameOver = false;
+    gameBtn.textContent = "Play";
+    gameBtn.style.display = "block";
+    restartBtn.style.display = "none";
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawCar(carX, carY);
+  }
+
+  document.addEventListener('keydown', moveCar);
+  gameBtn.addEventListener('click', toggleGame);
+  restartBtn.addEventListener('click', () => {
+    initGame();
+  });
+
+  function moveCar(e) {
+    if (isPaused || isGameOver) return;
+    if (e.key === "ArrowLeft" && carX > 10) {
+      carX -= 20;
+    }
+    if (e.key === "ArrowRight" && carX < canvas.width - carWidth - 10) {
+      carX += 20;
+    }
+  }
+
+  function toggleGame() {
+    if (isGameOver) return;
+
+    isPaused = !isPaused;
+    gameBtn.textContent = isPaused ? "Resume" : "Pause";
+
+    if (!isPaused) {
+      draw();
+    }
+  }
+
+  function createEnemy() {
+    if (isPaused || isGameOver) return;
+    const x = Math.random() * (canvas.width - carWidth - 20) + 10;
+    enemies.push({ x: x, y: -carHeight });
+  }
+
+  function createRoadLine() {
+    if (isPaused || isGameOver) return;
+    roadLines.push({ y: -40 });
+  }
+
+  function drawCar(x, y, color = 'blue') {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, carWidth, carHeight);
+  }
+
+  function drawGameOver() {
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#fff";
+    ctx.font = "36px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+    restartBtn.style.display = "block";
+    gameBtn.style.display = "none";
+  }
+
+  function draw() {
+    if (isPaused || isGameOver) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw road lines
+    ctx.fillStyle = "white";
+    for (let line of roadLines) {
+      ctx.fillRect(canvas.width / 2 - 5, line.y, 10, 40);
+      line.y += speed;
+    }
+
+    // Draw player's car
+    drawCar(carX, carY);
+
+    // Draw enemies
+    for (let enemy of enemies) {
+      drawCar(enemy.x, enemy.y, 'red');
+      enemy.y += speed;
+
+      // Collision detection
+      if (
+        enemy.y + carHeight > carY &&
+        enemy.y < carY + carHeight &&
+        enemy.x + carWidth > carX &&
+        enemy.x < carX + carWidth
+      ) {
+        isGameOver = true;
+        drawGameOver();
+        return;
+      }
+    }
+
+    // Clean up
+    while (roadLines.length && roadLines[0].y > canvas.height) roadLines.shift();
+    while (enemies.length && enemies[0].y > canvas.height) enemies.shift();
+
+    requestAnimationFrame(draw);
+  }
+
+  setInterval(createRoadLine, 500);
+  setInterval(createEnemy, 1500);
+
+  initGame();
+</script>
+
+</body>
+</html>
